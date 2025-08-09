@@ -4,7 +4,7 @@ def numar_linii_fisier():
             # lista = fisier.readlines() #Varianta 1
             # numar_linii = len(fisier.readlines())
             numar_linii = 0
-            for line in fisier:  #Varianta 2
+            for line in fisier:  #Varianta 2 # puteai sa pui _ in loc de linie (din moment ce nu folosesti variabila
                 numar_linii += 1
         print (numar_linii)
     except FileNotFoundError:
