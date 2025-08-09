@@ -1,0 +1,3 @@
+3. Primește un șir de la utilizator și scrie-l într-un fișier output.txt.
+2. Citește un fișier și numără câte cuvinte conține în total.
+1. Scrie un program care citește un fișier input.txt și afișează numărul total de linii.

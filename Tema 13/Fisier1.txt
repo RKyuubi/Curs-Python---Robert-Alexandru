@@ -1,0 +1,11 @@
+1. Scrie un program care citește un fișier input.txt și afișează numărul total de linii.
+
+2. Citește un fișier și numără câte cuvinte conține în total.
+
+3. Primește un șir de la utilizator și scrie-l într-un fișier output.txt.
+
+4. Citește conținutul din source.txt și scrie-l identic în destination.txt.
+
+5. Cere utilizatorului un cuvânt și afișează doar liniile din fișierul text.txt care îl conțin.
+
+6. Citește un fișier input.txt și scrie în output.txt liniile în ordine inversă.

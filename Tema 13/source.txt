@@ -1,0 +1,1 @@
+Scrie un program care citește un fișier input.txt și afișează numărul total de linii.
