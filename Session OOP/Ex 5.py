@@ -14,7 +14,6 @@ class Student:
 
     def note(self):
         numar_note_lista = int(input("Introdu cate note doresti sa aiba studentul:"))
-        self.grades = []
         for i in range(numar_note_lista):
             nota_elev = int(input(f"Introdu nota {i + 1}:"))
             self.grades.append(nota_elev)
@@ -25,6 +24,6 @@ class Student:
 
 if __name__ == "__main__":
     nume_student = Name("Robert", "Alexandru")
-    student = Student(Name, 30, [])
-    student.nota()
-    print(f"Media studentului {nume_student} este {student.medie()}")
+    student = Student(nume_student, 30, [])
+    student.note()
+    print(f"Media studentului {student.name} este {student.medie()}")
