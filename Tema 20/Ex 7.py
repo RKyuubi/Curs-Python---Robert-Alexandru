@@ -4,6 +4,10 @@ def tip_argumente (function):
             if not isinstance(arg, int):
                 print(f'Argument "{arg}" is not an integer')
                 return
+        for key, value in kwargs.items():
+            if not isinstance(value, int):
+                print(f'Argument "{key}" is not an integer')
+                return
         return function(*args, **kwargs)
     return wrapper
 
@@ -21,4 +25,7 @@ if __name__ == '__main__':
 
     print ("\nA treia verificare")
     aduna_numere(10, 2.4, 4)
+
+    print ("\nA patra verificare")
+    aduna_numere(a="robert", b=1, c=0)
 
