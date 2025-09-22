@@ -1,37 +1,25 @@
-import csv
-from fastapi import FastAPI, HTTPException, APIRouter
-from typing import List, Optional
+from fastapi import APIRouter, HTTPException, status
+from .functii import read_menu_from_csv, write_menu_to_csv
+from models import OrderRequest
 
-router = APIRouter(prefix="/order", tags=["food order"])
+router = APIRouter()
 
-def read_menu_from_csv():
-    try:
-        with open('db/Restaurant Menu.csv', mode='r', encoding='utf-8') as file:
-            reader = csv.DictReader(file)
-            return list(reader)
-    except FileNotFoundError:
-        raise HTTPException(status_code=500, detail="Menu file not found")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error reading menu file: {str(e)}")
-
-@router.get("/menu/search", response_model=Optional[dict])
-def search_item(name: str):
-    """Căutare după numele produsului, returnând toate detaliile."""
+@router.post("/orders/item name", status_code=status.HTTP_201_CREATED)
+def place_order(order: OrderRequest):
+    """Plasează o comandă pentru unul sau mai multe produse specificate după nume."""
     menu_data = read_menu_from_csv()
-    found_item = next((item for item in menu_data if name.lower() in item['name'].lower()), None)
+    ordered_items = []
 
-    if not found_item:
-        raise HTTPException(status_code=404, detail="Item not found")
+    for item_name in order.items:
+        found_item = next((item for item in menu_data if item['name'].lower() == item_name.lower()), None)
+        if not found_item:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Item not found: {item_name}")
 
-    return found_item
+        ordered_items.append(found_item)
 
-@router.post("/orders/{item_id}", status_code=201)
-def place_order(item_id: int):
-    """Plasează o comandă pentru un produs după ID."""
-    menu_data = read_menu_from_csv()
-    item = next((item for item in menu_data if int(item['id']) == item_id), None)
+    for item in ordered_items:
+        item['sold_count'] = str(int(item.get('sold_count', 0)) + 1)
 
-    if not item:
-        raise HTTPException(status_code=404, detail="Item not found in the menu")
+    write_menu_to_csv(menu_data)
 
-    return {"message": f"Successfully placed an order for {item['name']}"}
+    return {"message": "Order placed successfully", "ordered_items": [item['name'] for item in ordered_items]}
