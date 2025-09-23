@@ -10,17 +10,24 @@ def get_full_menu():
     """Returnează meniul complet, organizat pe categorii."""
     menu_data = read_menu_from_csv()
     starters = [
-        {k: v for k, v in item.items() if k not in ['id', 'category', 'sold_count']}
-        for item in menu_data if item['category'] == 'starters'
-    ]
+        Starter(id=int(item['id']), name=item['name'], price=float(item['price']), description=item['description'])
+        for item in menu_data if item['category'] == 'starters']
+
     main_courses = [
-        {k: v for k, v in item.items() if k not in ['id', 'category', 'sold_count']}
+        MainCourse(id=int(item['id']), name=item['name'], price=float(item['price']), description=item['description'])
         for item in menu_data if item['category'] == 'main_course'
     ]
+
     deserts = [
-        {k: v for k, v in item.items() if k not in ['id', 'category', 'sold_count']}
+        Desert(id=int(item['id']), name=item['name'], price=float(item['price']), description=item['description'])
         for item in menu_data if item['category'] == 'deserts'
     ]
+    for starter in starters:
+        del starter.id
+    for main_course in main_courses:
+        del main_course.id
+    for desert in deserts:
+        del desert.id
     return {
         "starters": starters,
         "main_courses": main_courses,
