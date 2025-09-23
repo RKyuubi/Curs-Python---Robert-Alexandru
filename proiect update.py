@@ -180,23 +180,6 @@ def add_item_to_menu(
     return {"message": "Item added successfully"}
 
 
-# @app.get("/menu/top_sold", response_model=List[dict])
-# def get_top_sold_items():
-#     """Returnează o listă cu cele mai vândute 5 produse."""
-#     menu_data = read_menu_from_csv()
-#     try:
-#         sorted_menu = sorted(menu_data, key=lambda item: int(item.get('sold_count', 0)), reverse=True)
-#     except (ValueError, TypeError):
-#         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-#                             detail="Invalid data in sold_count field")
-#
-#     top_items = [
-#         {"name": item['name'], "sold_count": int(item['sold_count'])}
-#         for item in sorted_menu[:5]
-#     ]
-#     return top_items
-
-
 @app.post("/orders/item name", status_code=status.HTTP_201_CREATED)
 def place_order(order: OrderRequest):
     """Plasează o comandă pentru unul sau mai multe produse specificate după nume."""

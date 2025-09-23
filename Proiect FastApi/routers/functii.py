@@ -47,3 +47,6 @@ def get_next_id():
         return 1
     max_id = max(int(item['id']) for item in menu_data)
     return max_id + 1
+
+def get_sold_count(item):
+    return int(item.get('sold_count', 0))
