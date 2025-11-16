@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bug Tracker - Autentificare și Tichete</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .card {
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+        }
+        .ticket-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .ticket-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+        }
+        /* Stil pentru a ascunde și arăta zona de detalii/comentarii */
+        .ticket-details {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        .ticket-card.open .ticket-details {
+            max-height: 1000px; /* Suficient de mare pentru a arăta conținutul */
+            transition: max-height 0.5s ease-in;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8">
+
+    <div id="app-container" class="max-w-7xl mx-auto">
+        <header class="bg-white p-6 mb-8 card flex flex-col md:flex-row justify-between items-center">
+            <h1 class="text-3xl font-bold text-gray-800 mb-4 md:mb-0">Bug Tracker</h1>
+            <div id="auth-status" class="text-sm font-semibold">
+                </div>
+        </header>
+
+        <div id="login-section" class="mb-8 bg-gray-100 p-6 card border border-indigo-200 hidden">
+            <h2 class="text-xl font-semibold mb-4 text-indigo-700">Autentificare</h2>
+            <form id="login-form" class="space-y-4">
+                <div>
+                    <label for="username" class="block text-sm font-medium text-gray-700">Utilizator</label>
+                    <input type="text" id="username" name="username" required
+                           value="Robert_Alexandru" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700">Parolă</label>
+                    <input type="password" id="password" name="password" required
+                           value="admin_parola" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <button type="submit" class="w-full bg-indigo-600 text-white p-2 rounded-md hover:bg-indigo-700 transition duration-150">
+                    Login
+                </button>
+                <div id="login-message" class="text-red-500 text-sm mt-2"></div>
+            </form>
+            <p class="mt-4 text-xs text-gray-500">Testează cu: Robert_Alexandru/admin_password (Admin) sau Ana_Tester/tester_password (Reporter)</p>
+        </div>
+
+        <div id="ticket-creation-section" class="grid grid-cols-1 lg:grid-cols-3 gap-8 hidden">
+
+            <div class="lg:col-span-1 bg-white p-6 card border-t-4 border-t-green-500 h-fit">
+                <h2 class="text-xl font-semibold mb-4 text-green-700">Creează Tichet Nou</h2>
+                <form id="new-ticket-form" class="space-y-4">
+                    <p id="reporter-display" class="text-sm text-gray-600 mb-2">
+                        Reporter: <span class="font-bold text-indigo-600" id="reporter-username-val">N/A</span>
+                    </p>
+
+                    <div>
+                        <label for="new-title" class="block text-sm font-medium text-gray-700">Titlu</label>
+                        <input type="text" id="new-title" name="title" required placeholder="Scurt rezumat al problemei" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:ring-green-500 focus:border-green-500">
+                    </div>
+
+                    <div>
+                        <label for="new-description" class="block text-sm font-medium text-gray-700">Descriere</label>
+                        <textarea id="new-description" name="description" rows="3" required placeholder="Detalii complete, pași de reproducere" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:ring-green-500 focus:border-green-500"></textarea>
+                    </div>
+
+                    <div>
+                        <label for="new-priority" class="block text-sm font-medium text-gray-700">Prioritate</label>
+                        <select id="new-priority" name="priority" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border">
+                            <option value="Highest">Highest</option>
+                            <option value="High">High</option>
+                            <option value="Medium" selected>Medium</option>
+                            <option value="Low">Low</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="new-assigned-to-username" class="block text-sm font-medium text-gray-700">Assignee (Atribuit)</label>
+                        <select id="new-assigned-to-username" name="assigned_to_username" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border">
+                            <option value="">(Neatribuit)</option>
+                            </select>
+                    </div>
+
+                    <button type="submit" class="w-full bg-green-600 text-white p-2 rounded-md hover:bg-green-700 transition duration-150">
+                        Creează Tichet
+                    </button>
+                </form>
+            </div>
+
+            <div class="lg:col-span-2">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-800">Tichete Deschise</h2>
+                <div id="tickets-list" class="space-y-4">
+                    <p class="text-center text-gray-500 italic">Se încarcă tichetele...</p>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+        const socket = io();
+        let currentUser = null;
+        let userList = [];
+        let ticketsData = {};
+
+        // === Elemente DOM ===
+        const authStatusEl = document.getElementById('auth-status');
+        const loginSection = document.getElementById('login-section');
+        const ticketSection = document.getElementById('ticket-creation-section');
+        const loginForm = document.getElementById('login-form');
+        const loginMessage = document.getElementById('login-message');
+        const ticketsListEl = document.getElementById('tickets-list');
+        const newTicketForm = document.getElementById('new-ticket-form');
+        const reporterUsernameVal = document.getElementById('reporter-username-val');
+        const assigneeSelect = document.getElementById('new-assigned-to-username');
+
+
+        // ====================================================================
+        // 1. GESTIONARE AUTENTIFICARE
+        // ====================================================================
+
+        async function fetchCurrentUser() {
+            try {
+                const response = await fetch(`${API_BASE}/user_info`);
+                const data = await response.json();
+
+                if (data.is_authenticated) {
+                    currentUser = data.user;
+                } else {
+                    currentUser = null;
+                }
+            } catch (error) {
+                console.error("Eroare la verificarea utilizatorului:", error);
+                currentUser = null;
+            }
+            updateUI();
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            loginMessage.textContent = '';
+
+            const data = {
+                username: e.target.username.value,
+                password: e.target.password.value,
+                remember: true
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    currentUser = result.user;
+                    updateUI();
+                    await fetchTickets();
+                    await fetchUsers();
+                } else {
+                    loginMessage.textContent = result.error || 'Autentificare eșuată.';
+                }
+            } catch (error) {
+                loginMessage.textContent = 'Eroare de rețea. Verificați conexiunea serverului.';
+                console.error('Eroare la login:', error);
+            }
+        }
+
+        async function handleLogout() {
+            try {
+                await fetch(`${API_BASE}/logout`, { method: 'POST' });
+                currentUser = null;
+                updateUI();
+                ticketsListEl.innerHTML = '<p class="text-center text-red-500 italic">Vă rugăm să vă autentificați pentru a vedea tichetele.</p>';
+                ticketsData = {};
+            } catch (error) {
+                console.error('Eroare la logout:', error);
+            }
+        }
+
+        function updateUI() {
+            if (currentUser) {
+                // Autentificat
+                authStatusEl.innerHTML = `
+                    <span class="text-green-600">Logat ca: <strong class="text-indigo-700">${currentUser.username} (${currentUser.role})</strong></span>
+                    <button id="logout-btn" class="ml-4 px-3 py-1 bg-red-500 text-white rounded-md hover:bg-red-600 transition duration-150">Logout</button>
+                `;
+                document.getElementById('logout-btn').addEventListener('click', handleLogout);
+
+                loginSection.classList.add('hidden');
+                ticketSection.classList.remove('hidden');
+                reporterUsernameVal.textContent = currentUser.username;
+                loginMessage.textContent = '';
+
+                fetchUsers();
+                fetchTickets();
+
+            } else {
+                // Neautentificat
+                authStatusEl.innerHTML = '<span class="text-red-500">Neautentificat</span>';
+                loginSection.classList.remove('hidden');
+                ticketSection.classList.add('hidden');
+            }
+        }
+
+        loginForm.addEventListener('submit', handleLogin);
+
+        // ====================================================================
+        // 2. GESTIONARE TICHETE (CRUD)
+        // ====================================================================
+
+        async function fetchUsers() {
+            try {
+                const response = await fetch(`${API_BASE}/users`);
+                if (!response.ok) throw new Error("Eroare la preluarea utilizatorilor");
+                userList = await response.json();
+                populateAssigneeSelect();
+            } catch (error) {
+                console.error('Eroare la fetch users:', error);
+            }
+        }
+
+        function populateAssigneeSelect() {
+            assigneeSelect.innerHTML = '<option value="">(Neatribuit)</option>';
+            userList.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user.username;
+                option.textContent = `${user.username} (${user.role})`;
+                assigneeSelect.appendChild(option);
+            });
+        }
+
+
+        async function fetchTickets() {
+            ticketsListEl.innerHTML = '<p class="text-center text-gray-500 italic">Se încarcă tichetele...</p>';
+            try {
+                const response = await fetch(`${API_BASE}/tickets`);
+                if (!response.ok) {
+                    if (response.status === 401) {
+                         currentUser = null;
+                         updateUI();
+                         return;
+                    }
+                    throw new Error("Eroare la preluarea tichetelor");
+                }
+                const tickets = await response.json();
+
+                ticketsData = tickets.reduce((acc, ticket) => {
+                    acc[ticket.id] = ticket;
+                    return acc;
+                }, {});
+
+                renderTickets(tickets);
+            } catch (error) {
+                ticketsListEl.innerHTML = `<p class="text-center text-red-500 italic">Eroare la încărcarea tichetelor: ${error.message}</p>`;
+                console.error('Eroare la fetch tickets:', error);
+            }
+        }
+
+        function toggleTicketDetails(ticketId) {
+            const card = document.getElementById(`ticket-${ticketId}`);
+            card.classList.toggle('open');
+        }
+
+        function renderComment(comment) {
+             const date = new Date(comment.created_at).toLocaleDateString('ro-RO', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+             return `
+                 <div class="bg-gray-50 p-3 rounded-md border border-gray-200">
+                     <p class="text-sm font-semibold text-gray-800 mb-1">${comment.author_username}
+                         <span class="text-xs font-normal text-gray-500 ml-2">${date}</span>
+                     </p>
+                     <p class="text-sm text-gray-700">${comment.content}</p>
+                 </div>
+             `;
+        }
+
+        function renderTickets(ticketsArray) {
+            ticketsListEl.innerHTML = '';
+
+            if (ticketsArray.length === 0) {
+                ticketsListEl.innerHTML = '<p class="text-center text-gray-500 italic">Nu există tichete în sistem.</p>';
+                return;
+            }
+
+            const sortedTickets = ticketsArray.sort((a, b) => b.id - a.id);
+
+            sortedTickets.forEach(ticket => {
+                const statusColor = {
+                    'New': 'bg-blue-100 text-blue-800',
+                    'Open': 'bg-indigo-100 text-indigo-800',
+                    'In Progress': 'bg-yellow-100 text-yellow-800',
+                    'Resolved': 'bg-green-100 text-green-800',
+                    'Closed': 'bg-gray-200 text-gray-600',
+                }[ticket.status] || 'bg-gray-100 text-gray-800';
+
+                const priorityColor = {
+                    'Highest': 'text-red-600 font-bold',
+                    'High': 'text-orange-500',
+                    'Medium': 'text-green-500',
+                    'Low': 'text-blue-500',
+                }[ticket.priority] || 'text-gray-500';
+
+                const assignedName = ticket.assignee_username ? ticket.assignee_username : 'Neatribuit';
+
+                // LOGICA PENTRU VIZIBILITATEA BUTONULUI DE ȘTERGERE
+                const isReporter = currentUser && ticket.reporter_id === currentUser.id;
+                const isAdmin = currentUser && currentUser.role === 'Admin';
+                const canDelete = isAdmin || isReporter;
+
+                const deleteButtonHtml = canDelete ? `
+                    <button onclick="handleDeleteClick(${ticket.id})"
+                        class="delete-ticket-btn mt-3 px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 transition duration-150 text-sm font-semibold">
+                        Șterge Tichetul
+                    </button>
+                ` : '';
+
+                const ticketEl = document.createElement('div');
+                ticketEl.id = `ticket-${ticket.id}`;
+                ticketEl.className = 'ticket-card bg-white p-5 card border-l-4 border-indigo-500 cursor-pointer';
+                ticketEl.innerHTML = `
+                    <div class="flex justify-between items-start mb-2" onclick="toggleTicketDetails(${ticket.id})">
+                        <h3 class="text-lg font-semibold text-gray-800">
+                            #${ticket.id} - ${ticket.title}
+                        </h3>
+                        <span class="px-2 py-0.5 text-xs font-medium rounded-full ${statusColor}">
+                            ${ticket.status}
+                        </span>
+                    </div>
+
+                    <div class="flex flex-wrap text-xs text-gray-500 space-x-4 mb-3">
+                        <p>Prioritate: <span class="${priorityColor}">${ticket.priority}</span></p>
+                        <p>Reporter: <span class="font-medium">${ticket.reporter_username}</span></p>
+                        <p>Assignee: <span class="font-medium">${assignedName}</span></p>
+                    </div>
+
+                    <div class="ticket-details pt-3 border-t border-gray-200 mt-3">
+                        <p class="text-sm text-gray-700 mb-4 whitespace-pre-wrap">${ticket.description}</p>
+
+                        ${deleteButtonHtml}
+
+                        <h4 class="text-md font-semibold text-gray-700 mb-2 mt-4">Comentarii (${ticket.comments ? ticket.comments.length : 0})</h4>
+
+                        <div id="comments-list-${ticket.id}" class="space-y-3 mb-4">
+                            ${ticket.comments && ticket.comments.length > 0
+                                ? ticket.comments.map(renderComment).join('')
+                                : '<p class="text-sm text-gray-500 italic">Fără comentarii încă.</p>'
+                            }
+                        </div>
+
+                        <form id="comment-form-${ticket.id}" class="comment-form flex space-x-2">
+                            <input type="hidden" name="ticket_id" value="${ticket.id}">
+                            <textarea name="content" rows="1" required placeholder="Adaugă un comentariu..."
+                                class="flex-grow rounded-md border-gray-300 shadow-sm p-2 text-sm border resize-none"></textarea>
+                            <button type="submit" class="bg-indigo-500 text-white p-2 rounded-md hover:bg-indigo-600 transition duration-150 text-sm h-fit">
+                                Trimite
+                            </button>
+                        </form>
+                    </div>
+                `;
+                ticketsListEl.appendChild(ticketEl);
+            });
+
+            document.querySelectorAll('.comment-form').forEach(form => {
+                form.addEventListener('submit', handleNewComment);
+            });
+        }
+
+        // Funcție de actualizare/adăugare tichet (folosită de SocketIO)
+        function upsertTicket(ticket) {
+            ticketsData[ticket.id] = ticket;
+            // Pur și simplu re-randăm toată lista
+            renderTickets(Object.values(ticketsData));
+        }
+
+        // Funcție de ștergere tichet (folosită de SocketIO)
+        function deleteTicket(ticketId) {
+            delete ticketsData[ticketId];
+            renderTickets(Object.values(ticketsData));
+        }
+
+        // NOU: Funcția care gestionează click-ul pe butonul Șterge și apelul API
+        async function handleDeleteClick(ticketId) {
+            if (!confirm(`Ești sigur că vrei să ștergi tichetul #${ticketId} și toate comentariile asociate? Această acțiune este permanentă!`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/tickets/${ticketId}`, {
+                    method: 'DELETE',
+                });
+
+                if (response.ok) {
+                    console.log(`Cererea de ștergere a tichetului #${ticketId} a fost trimisă cu succes.`);
+                } else if (response.status === 401 || response.status === 403) {
+                    alert("Nu sunteți autorizat să ștergeți acest tichet.");
+                } else {
+                    const result = await response.json();
+                    alert(`Eroare la ștergere: ${result.error || 'Eroare internă a serverului'}`);
+                }
+            } catch (error) {
+                alert('Eroare de rețea la ștergerea tichetului.');
+                console.error('Eroare DELETE:', error);
+            }
+        }
+
+
+        newTicketForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = new FormData(newTicketForm);
+            const data = Object.fromEntries(formData.entries());
+
+            if (data.assigned_to_username === "") {
+                delete data.assigned_to_username;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/tickets`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert(`Tichetul #${result.id} a fost creat cu succes!`);
+                    newTicketForm.reset();
+                    // Așteptăm SocketIO
+                } else {
+                    alert(`Eroare la creare: ${result.error || 'Server error'}`);
+                }
+            } catch (error) {
+                alert('Eroare de rețea la crearea tichetului.');
+                console.error('Eroare la crearea tichetului:', error);
+            }
+        });
+
+        async function handleNewComment(e) {
+            e.preventDefault();
+            const form = e.target;
+            const ticketId = form.ticket_id.value;
+            const content = form.content.value;
+
+            if (!content.trim()) return;
+
+            form.querySelector('button[type="submit"]').disabled = true;
+
+            const data = {
+                ticket_id: parseInt(ticketId),
+                content: content
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/comments`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    form.content.value = '';
+                } else {
+                    const result = await response.json();
+                    alert(`Eroare la adăugarea comentariului: ${result.error || 'Server error'}`);
+                }
+
+            } catch (error) {
+                alert('Eroare de rețea la adăugarea comentariului.');
+                console.error('Eroare la adăugarea comentariului:', error);
+            } finally {
+                form.querySelector('button[type="submit"]').disabled = false;
+            }
+        }
+
+
+        // ====================================================================
+        // 3. INIȚIALIZARE ȘI SOCKETIO
+        // ====================================================================
+
+        // Funcții globale pentru a putea fi apelate din onclick
+        window.toggleTicketDetails = toggleTicketDetails;
+        window.handleDeleteClick = handleDeleteClick;
+
+
+        // GESTIONARE EVENIMENTE SOCKETIO
+
+        socket.on('connect', () => {
+            console.log('SocketIO conectat.');
+        });
+
+        socket.on('new_ticket', (ticket) => {
+            console.log('Eveniment SocketIO: Tichet nou', ticket);
+            upsertTicket(ticket);
+        });
+
+        socket.on('ticket_updated', (ticket) => {
+            console.log('Eveniment SocketIO: Tichet actualizat', ticket);
+            upsertTicket(ticket);
+        });
+
+        socket.on('ticket_deleted', (data) => {
+            console.log('Eveniment SocketIO: Tichet șters', data.id);
+            deleteTicket(data.id);
+        });
+
+        socket.on('new_comment', (comment) => {
+            console.log('Eveniment SocketIO: Comentariu nou', comment);
+
+            const ticket = ticketsData[comment.ticket_id];
+
+            if (ticket) {
+                if (!ticket.comments) {
+                    ticket.comments = [];
+                }
+                ticket.comments.push(comment);
+
+                // Re-randăm tichetul pentru a actualiza contorul de comentarii
+                upsertTicket(ticket);
+
+                // Deschide detaliile tichetului pentru a vedea comentariul
+                const card = document.getElementById(`ticket-${comment.ticket_id}`);
+                if (card && !card.classList.contains('open')) {
+                    card.classList.add('open');
+                }
+            }
+        });
+
+
+        // Verifică starea la încărcarea paginii și actualizează UI
+        document.addEventListener('DOMContentLoaded', fetchCurrentUser);
+
+    </script>
+</body>
+</html>

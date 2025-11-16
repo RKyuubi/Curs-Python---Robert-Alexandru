@@ -1,0 +1,6 @@
+2025-11-16 14:45:19,557 INFO: Se încearcă crearea tabelelor în baza de date MySQL... [in C:\Users\rober\Curs Python\Final Project\app.py:84]
+2025-11-16 14:45:19,563 INFO: Tabelele bazei de date create/verificate cu succes. [in C:\Users\rober\Curs Python\Final Project\app.py:89]
+2025-11-16 14:45:19,571 INFO: Serverul Flask pornește... [in C:\Users\rober\Curs Python\Final Project\app.py:100]
+2025-11-16 14:45:20,049 INFO: Se încearcă crearea tabelelor în baza de date MySQL... [in C:\Users\rober\Curs Python\Final Project\app.py:84]
+2025-11-16 14:45:20,055 INFO: Tabelele bazei de date create/verificate cu succes. [in C:\Users\rober\Curs Python\Final Project\app.py:89]
+2025-11-16 14:45:20,063 INFO: Serverul Flask pornește... [in C:\Users\rober\Curs Python\Final Project\app.py:100]
