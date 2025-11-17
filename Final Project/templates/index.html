@@ -404,7 +404,7 @@
             renderTickets(Object.values(ticketsData));
         }
 
-        // NOU: Funcția care gestionează click-ul pe butonul Șterge și apelul API
+        // Funcția care gestionează click-ul pe butonul Șterge și apelul API
         async function handleDeleteClick(ticketId) {
             if (!confirm(`Ești sigur că vrei să ștergi tichetul #${ticketId} și toate comentariile asociate? Această acțiune este permanentă!`)) {
                 return;
@@ -417,6 +417,8 @@
 
                 if (response.ok) {
                     console.log(`Cererea de ștergere a tichetului #${ticketId} a fost trimisă cu succes.`);
+                    // MODIFICAT: Elimină imediat tichetul din UI.
+                    deleteTicket(ticketId);
                 } else if (response.status === 401 || response.status === 403) {
                     alert("Nu sunteți autorizat să ștergeți acest tichet.");
                 } else {
@@ -452,7 +454,8 @@
                 if (response.ok) {
                     alert(`Tichetul #${result.id} a fost creat cu succes!`);
                     newTicketForm.reset();
-                    // Așteptăm SocketIO
+                    // MODIFICAT: Forțează reîncărcarea listei locale de tichete.
+                    await fetchTickets();
                 } else {
                     alert(`Eroare la creare: ${result.error || 'Server error'}`);
                 }
@@ -486,6 +489,8 @@
 
                 if (response.ok) {
                     form.content.value = '';
+                    // MODIFICAT: Forțează reîncărcarea listei de tichete pentru a arăta comentariul.
+                    await fetchTickets();
                 } else {
                     const result = await response.json();
                     alert(`Eroare la adăugarea comentariului: ${result.error || 'Server error'}`);
@@ -517,6 +522,7 @@
 
         socket.on('new_ticket', (ticket) => {
             console.log('Eveniment SocketIO: Tichet nou', ticket);
+            // Dacă primești actualizarea prin socket, nu mai e nevoie de fetchTickets, dar e bine să ai un fallback.
             upsertTicket(ticket);
         });
 
