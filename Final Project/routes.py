@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, render_template, redirect, url_for, session
+from flask import Blueprint, request, jsonify, render_template
 import logging
 from models import db, User, Ticket, Comment
 from sqlalchemy.exc import IntegrityError

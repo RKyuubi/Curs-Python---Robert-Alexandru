@@ -6,6 +6,7 @@ from flask_socketio import SocketIO, join_room
 from flask_cors import CORS
 from dotenv import load_dotenv
 from flask_login import LoginManager
+from urllib.parse import quote_plus, urlparse
 
 # Importă db (instanța SQLAlchemy), funcția seed_data, și init_login_manager
 from models import db, seed_data, init_login_manager
@@ -41,7 +42,13 @@ def setup_logging(app):
 # --- Crearea și configurarea aplicației Flask ---
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('MYSQL_URL')
+db_url = os.getenv('MYSQL_URL')
+parsed_url = urlparse(db_url)
+quoted_password = ""
+if parsed_url.password:
+    quoted_password = quote_plus(parsed_url.password)
+safe_db_url = f"{parsed_url.scheme}://{parsed_url.username}:{quoted_password}@{parsed_url.hostname}:{parsed_url.port}{parsed_url.path}"
+app.config['SQLALCHEMY_DATABASE_URI'] = safe_db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Inițializare componente
